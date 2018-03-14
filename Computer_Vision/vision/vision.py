@@ -1,6 +1,7 @@
 import sys
 import cv2
 
+
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 cap = cv2.VideoCapture(0)
@@ -18,13 +19,16 @@ while cap.isOpened():
         # Display the resulting frame
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+        # face detector
         faces = face_cascade.detectMultiScale(gray, 1.1, 5)
         for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            roi_gray = gray[y:y + h, x:x + w]
-            roi_color = frame[y:y + h, x:x + w]
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            x_coord = (x + (x+w))/2
+            y_coord = (y + (y+h))/2
+            # print(x_coord, y_coord)
 
         cv2.imshow('Frame', frame)
+        cv2.imshow('Frame2', gray)
 
         # Press Q on keyboard to  exit
         if cv2.waitKey(25) & 0xFF == ord('q'):
