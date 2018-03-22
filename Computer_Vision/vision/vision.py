@@ -47,7 +47,7 @@ class Camera:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
 
-            objects = object_cascade.detectMultiScale(gray_feed, 1.2, 5)
+            objects = object_cascade.detectMultiScale(gray_feed, 1.5, 5)
             for (x, y, w, h) in objects:
                 cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 self.x_coord = (x + (x + w)) / 2
