@@ -1,5 +1,6 @@
 import sys
 import cv2
+import time
 
 
 class Camera:
@@ -7,6 +8,8 @@ class Camera:
     x_coord = 0
     y_coord = 0
     fps = 0
+
+    human_head_mm = 560
 
     def __init__(self, object_cascade, object2_cascade, camera_port):
         """
@@ -43,6 +46,28 @@ class Camera:
         # Closes all the frames
         cv2.destroyAllWindows()
 
+    def get_frames_per_sec(self):
+        # Number of frames to capture
+        num_frames = 120
+
+        print("Capturing {0} frames".format(num_frames))
+
+        # Start time
+        start = time.time()
+
+        # Grab a few frames
+
+        # End time
+        end = time.time()
+
+        # Time elapsed
+        seconds = end - start
+        print("Time taken : {0} seconds".format(seconds))
+
+        # Calculate frames per second
+        fps = num_frames / seconds
+        print("Estimated frames per second : {0}".format(fps))
+
     def detect_object(self):
         """
         detect object - method detects an object given the specified object perameters given by the haar cascade and sends
@@ -65,7 +90,7 @@ class Camera:
                 # print(x_coord, y_coord)
 
             objects_2 = profile_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
-            for (x, y, w, h) in objects:
+            for (x, y, w, h) in objects_2:
                 cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 self.x_coord = (x + (x + w)) / 2
                 self.y_coord = (y + (y + h)) / 2
