@@ -78,6 +78,7 @@ class Camera:
         front_face_cascade = cv2.CascadeClassifier(self.object_cascade)
         profile_face_cascade = cv2.CascadeClassifier(self.object2_cascade)
 
+        # todo: calculate object distance from camera, velocity and acceleration
         while self.feed:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
@@ -87,7 +88,7 @@ class Camera:
                 cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 self.x_coord = (x + (x + w)) / 2
                 self.y_coord = (y + (y + h)) / 2
-                # print(x_coord, y_coord)
+                print(self.x_coord, self.y_coord)
 
             objects_2 = profile_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
             for (x, y, w, h) in objects_2:
