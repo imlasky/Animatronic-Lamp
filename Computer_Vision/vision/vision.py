@@ -3,11 +3,17 @@ import cv2
 import time
 
 
+
+
 class Camera:
     # constructor
     x_coord = 0
     y_coord = 0
     fps = 0
+    x_vel = 0
+    y_vel = 0
+    x_acc = 0
+    y_acc = 0
 
     human_head_mm = 560
 
@@ -83,16 +89,20 @@ class Camera:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
 
-            objects = front_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
-            for (x, y, w, h) in objects:
-                cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                self.x_coord = (x + (x + w)) / 2
-                self.y_coord = (y + (y + h)) / 2
-                print(self.x_coord, self.y_coord)
+            front_face = front_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
+            for (x, y, w, h) in front_face:
+                cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
-            objects_2 = profile_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
-            for (x, y, w, h) in objects_2:
-                cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                self.x_coord = self.calculate_coord(x, x + w, "x")
+                self.y_coord = self.calculate_coord(y, y + h, "y")
+
+                print("position:", self.x_coord, self.y_coord)
+                print("velocity:", self.x_vel, self.y_vel)
+                print("acceleration:", self.x_acc, self.y_acc)
+
+            side_face = profile_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
+            for (x, y, w, h) in side_face:
+                cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (255, 0, 0), 1)
                 self.x_coord = (x + (x + w)) / 2
                 self.y_coord = (y + (y + h)) / 2
                 # print(x_coord, y_coord)
@@ -106,6 +116,20 @@ class Camera:
                 break
 
         self.kill_feed()
+
+    def calculate_coord(self, vertex1, vertex2, direction):
+        current_pos = (vertex1 + vertex2) / 2
+        if direction == "x":
+            prev_vel_x = self.x_vel
+            if self.x_coord != 0:
+                self.x_vel = self.x_coord - current_pos
+                self.x_acc = self.x_vel - prev_vel_x
+        elif direction == "y":
+            prev_vel_y = self.y_vel
+            if self.y_coord != 0:
+                self.y_vel = self.y_coord - current_pos
+                self.y_acc = self.y_vel - prev_vel_y
+        return current_pos
 
 
 front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
