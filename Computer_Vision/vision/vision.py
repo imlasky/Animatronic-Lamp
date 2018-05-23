@@ -52,28 +52,6 @@ class Camera:
         # Closes all the frames
         cv2.destroyAllWindows()
 
-    def get_frames_per_sec(self):
-        # Number of frames to capture
-        num_frames = 120
-
-        print("Capturing {0} frames".format(num_frames))
-
-        # Start time
-        start = time.time()
-
-        # Grab a few frames
-
-        # End time
-        end = time.time()
-
-        # Time elapsed
-        seconds = end - start
-        print("Time taken : {0} seconds".format(seconds))
-
-        # Calculate frames per second
-        fps = num_frames / seconds
-        print("Estimated frames per second : {0}".format(fps))
-
     def detect_object(self):
         """
         detect object - method detects an object given the specified object perameters given by the haar cascade and sends
@@ -94,8 +72,6 @@ class Camera:
             # print("position:", self.x_coord, self.y_coord)
             # print("velocity:", self.x_vel, self.y_vel)
             # print("acceleration:", self.x_acc, self.y_acc)
-
-
 
             # for debug, remove later
             cv2.imshow('Frame', feed_by_frame)
