@@ -22,11 +22,13 @@ The objective is to modify a physical Luxo lamp to be capable of conveying emoti
 * 5 Servomotors
 
 ### Software
+* [C#](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/) - Programming language used to build the model of the lamp
 * [Processing](https://processing.org/) - Simulation of the lamp's joint movements
 * [Python](https://www.python.org/) - Programming language used to program the animatronic lamp
 * [Google Assistant API](https://console.cloud.google.com/apis/library/embeddedassistant.googleapis.com/) - Speech recognition and speech synthesis
 * [OpenCV](https://opencv.org/) - Computer vision library for face recognition, object detection, and object tracking
 * [TensorFlow](https://www.tensorflow.org/) - Machine learning framework for training the lamp's joint movements
+* [Unity3D](https://unity3d.com/) - Lamp modeling and machine learning simulation
 
 ## Repository Directories
 * *Documentation* contains all block diagrams, design documents, proposals, and presentation files.
