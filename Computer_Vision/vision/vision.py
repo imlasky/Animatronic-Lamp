@@ -1,8 +1,5 @@
-import sys
 import cv2
-import time
-
-
+import numpy as np
 
 
 class Camera:
@@ -66,12 +63,15 @@ class Camera:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
 
-            self.find_object(gray_feed, feed_by_frame, front_face_cascade)
-            self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
+            # self.find_object(gray_feed, feed_by_frame, front_face_cascade)
+            # self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
 
             # print("position:", self.x_coord, self.y_coord)
             # print("velocity:", self.x_vel, self.y_vel)
             # print("acceleration:", self.x_acc, self.y_acc)
+
+            self.detect_corners(gray_feed, feed_by_frame)
+
 
             # for debug, remove later
             cv2.imshow('Frame', feed_by_frame)
@@ -110,6 +110,14 @@ class Camera:
 
             self.x_coord = self.calculate_coord(x, x + w, "x")
             self.y_coord = self.calculate_coord(y, y + h, "y")
+        pass
+
+    def detect_corners(self, gray_feed, feed_by_frame):
+        gray = np.float32(gray_feed)
+        dst = cv2.cornerHarris(gray, 2, 3, 0.04)
+        dst = cv2.dilate(dst, None)
+
+        feed_by_frame[dst > 0.01 * dst.max()] = [0, 0, 255]
         pass
 
 
