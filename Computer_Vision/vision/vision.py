@@ -84,28 +84,23 @@ class Camera:
         front_face_cascade = cv2.CascadeClassifier(self.object_cascade)
         profile_face_cascade = cv2.CascadeClassifier(self.object2_cascade)
 
-        # todo: calculate object distance from camera, velocity and acceleration
         while self.feed:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
 
-            front_face = front_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
-            for (x, y, w, h) in front_face:
-                cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
+            self.find_object(gray_feed, feed_by_frame, front_face_cascade)
+            self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
 
-                self.x_coord = self.calculate_coord(x, x + w, "x")
-                self.y_coord = self.calculate_coord(y, y + h, "y")
+                # print("position:", self.x_coord, self.y_coord)
+                # print("velocity:", self.x_vel, self.y_vel)
+                # print("acceleration:", self.x_acc, self.y_acc)
 
-                print("position:", self.x_coord, self.y_coord)
-                print("velocity:", self.x_vel, self.y_vel)
-                print("acceleration:", self.x_acc, self.y_acc)
-
-            side_face = profile_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
-            for (x, y, w, h) in side_face:
-                cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (255, 0, 0), 1)
-                self.x_coord = (x + (x + w)) / 2
-                self.y_coord = (y + (y + h)) / 2
-                # print(x_coord, y_coord)
+            # side_face = profile_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
+            # for (x, y, w, h) in side_face:
+            #     cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (255, 0, 0), 1)
+            #     self.x_coord = (x + (x + w)) / 2
+            #     self.y_coord = (y + (y + h)) / 2
+            #     # print(x_coord, y_coord)
 
             # for debug, remove later
             cv2.imshow('Frame', feed_by_frame)
@@ -118,6 +113,11 @@ class Camera:
         self.kill_feed()
 
     def calculate_coord(self, vertex1, vertex2, direction):
+        """
+        calculate_coord - gets the coordinates of the current relative position of the object in question and
+        calculates the velocity and direction by using the delta between the current position and the last known
+        position. Objects are stored globally and returns the current position of the object in question.
+        """
         current_pos = (vertex1 + vertex2) / 2
         if direction == "x":
             prev_vel_x = self.x_vel
@@ -130,6 +130,16 @@ class Camera:
                 self.y_vel = self.y_coord - current_pos
                 self.y_acc = self.y_vel - prev_vel_y
         return current_pos
+
+    def find_object(self, gray_feed, feed_by_frame, front_face_cascade):
+
+        front_face = front_face_cascade.detectMultiScale(gray_feed, 1.2, 5)
+        for (x, y, w, h) in front_face:
+            cv2.rectangle(feed_by_frame, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
+            self.x_coord = self.calculate_coord(x, x + w, "x")
+            self.y_coord = self.calculate_coord(y, y + h, "y")
+        pass
 
 
 front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
