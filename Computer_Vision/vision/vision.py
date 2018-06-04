@@ -74,8 +74,8 @@ class Camera:
 
 
             # for debug, remove later
-            cv2.imshow('Frame', feed_by_frame)
-            cv2.imshow('Frame2', gray_feed)
+            # cv2.imshow('Frame', feed_by_frame)
+            # cv2.imshow('Frame2', gray_feed)
 
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -112,13 +112,44 @@ class Camera:
             self.y_coord = self.calculate_coord(y, y + h, "y")
         pass
 
-    def detect_corners(self, gray_feed, feed_by_frame):
-        gray = np.float32(gray_feed)
-        dst = cv2.cornerHarris(gray, 2, 3, 0.04)
-        dst = cv2.dilate(dst, None)
+    def get_new(old):
+        new = np.ones(old.shape, np.uint8)
+        cv2.bitwise_not(new, new)
+        return new
 
-        feed_by_frame[dst > 0.01 * dst.max()] = [0, 0, 255]
+    def detect_corners(self, img_gray, img):
+
+        maxAreaFound = 0
+
+        img_g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img_g = cv2.bilateralFilter(img_g, 9, 75, 75)
+        img_g = cv2.adaptiveThreshold(img_g, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 4)
+        img_g = cv2.medianBlur(img, 11)
+        img_g = cv2.copyMakeBorder(img, 5, 5, 5, 5, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+        edges = cv2.Canny(img_g, 200, 250)
+
+        im2, contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours = filter(lambda cont: cv2.arcLength(cont, False) > 100, contours)
+        contours = filter(lambda cont: cv2.contourArea(cont) > 10000, contours)
+
+        # simplify contours down to polygons
+        rects = []
+        for cont in contours:
+            rect = cv2.approxPolyDP(cont, 40, True).copy().reshape(-1, 2)
+            rects.append(rect)
+
+        # that's basically it
+        cv2.drawContours(img, rects, -1, (0, 255, 0), 1)
+
+
+        cv2.imshow('canny', edges)
+        cv2.imshow('canny', img)
+
+
+
         pass
+
+
 
 
 front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
