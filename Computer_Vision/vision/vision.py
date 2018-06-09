@@ -64,7 +64,7 @@ class Camera:
         # Closes all the frames
         cv2.destroyAllWindows()
 
-    def detect_object(self):
+    def detect_object(self, cascade):
         """
         detect object - method detects an object given the specified object perameters given by the haar cascade and sends
         x and y coordinates to the class attributes. method is complete when feed is killed.
@@ -79,18 +79,24 @@ class Camera:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
 
-            self.find_object(gray_feed, feed_by_frame, front_face_cascade)
-            # self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
+            if cascade == 'front_face':
+                self.find_object(gray_feed, feed_by_frame, front_face_cascade)
+            elif cascade == 'profile_face':
+                self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
+            elif cascade == 'paper':
+                self.find_boxes(gray_feed, feed_by_frame)
 
-            print("position:", self.object_coord)
+            # qprint("position:", self.object_coord)
             # print("velocity:", self.object_vel)
             # print("acceleration:", self.object_acc)
 
-            self.find_boxes(gray_feed, feed_by_frame)
+
 
             # for debug, remove later
-            # cv2.imshow('Frame', feed_by_frame)
-            # cv2.imshow('Frame2', gray_feed)
+            cv2.imshow('Frame', feed_by_frame)
+            cv2.imshow('Frame2', gray_feed)
+
+
 
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -122,7 +128,7 @@ class Camera:
 
     def find_object(self, feed_g, feed_color, cascade):
 
-        front_face = cascade.detectMultiScale(feed_g, 1.2, 5)
+        front_face = cascade.detectMultiScale(feed_g, 1.1, 5)
         for (x, y, w, h) in front_face:
             cv2.rectangle(feed_color, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
@@ -178,7 +184,6 @@ class Camera:
 front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
 profile_face_objects = cv2.data.haarcascades + 'haarcascade_profileface.xml'
 
-print(sys.argv)
 camera = Camera(front_face_objects, profile_face_objects, 0)
 camera_ready = camera.camera_ready()
-camera.detect_object()
+camera.detect_object(sys.argv[1])
