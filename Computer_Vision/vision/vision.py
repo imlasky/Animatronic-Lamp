@@ -9,7 +9,8 @@ class Camera:
     run the camera, identify objects of interest and specify the location based on the camera's position. The class will
     also be able to identify the objects velocity and acceleration in order to help with the movement of the device.
 
-
+        Arguments: Camera accepts 1 argument with three options. "front_face", "profile_face", and "paper" in reference
+        to the object that its trying to find. For options front_face and profile face
     """
 
     # global vars.
@@ -78,6 +79,8 @@ class Camera:
         while self.feed:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
+            flip_feed = cv2.flip(feed_by_frame, 0)
+            flip_feed_g = cv2.flip(gray_feed, 0)
 
             if cascade == 'front_face':
                 self.find_object(gray_feed, feed_by_frame, front_face_cascade)
@@ -90,13 +93,9 @@ class Camera:
             # print("velocity:", self.object_vel)
             # print("acceleration:", self.object_acc)
 
-
-
             # for debug, remove later
             cv2.imshow('Frame', feed_by_frame)
             cv2.imshow('Frame2', gray_feed)
-
-
 
             # Press Q on keyboard to  exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
