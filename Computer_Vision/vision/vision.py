@@ -1,9 +1,18 @@
 import cv2
 import numpy as np
+import sys
 
 
 class Camera:
-    # constructor
+    """
+        Camera Class - class that takes control of the camera and its functionality. The objective of this class is to
+    run the camera, identify objects of interest and specify the location based on the camera's position. The class will
+    also be able to identify the objects velocity and acceleration in order to help with the movement of the device.
+
+
+    """
+
+    # global vars.
     x_coord = 0
     y_coord = 0
     fps = 0
@@ -11,6 +20,8 @@ class Camera:
     y_vel = 0
     x_acc = 0
     y_acc = 0
+
+    center_poly = 0
 
     human_head_mm = 560
 
@@ -27,6 +38,10 @@ class Camera:
         :param camera_port: camera object
         :return:
         """
+        self.object_coord = []
+        self.object_vel = []
+        self.object_acc = []
+
         self.camera_port = camera_port
         self.feed = cv2.VideoCapture(self.camera_port)
         self.object_cascade = object_cascade
@@ -59,19 +74,19 @@ class Camera:
         front_face_cascade = cv2.CascadeClassifier(self.object_cascade)
         profile_face_cascade = cv2.CascadeClassifier(self.object2_cascade)
 
+        # camera loop
         while self.feed:
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
 
-            # self.find_object(gray_feed, feed_by_frame, front_face_cascade)
+            self.find_object(gray_feed, feed_by_frame, front_face_cascade)
             # self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
 
-            # print("position:", self.x_coord, self.y_coord)
-            # print("velocity:", self.x_vel, self.y_vel)
-            # print("acceleration:", self.x_acc, self.y_acc)
+            print("position:", self.object_coord)
+            # print("velocity:", self.object_vel)
+            # print("acceleration:", self.object_acc)
 
-            self.detect_corners(gray_feed, feed_by_frame)
-
+            self.find_boxes(gray_feed, feed_by_frame)
 
             # for debug, remove later
             # cv2.imshow('Frame', feed_by_frame)
@@ -100,6 +115,9 @@ class Camera:
             if self.y_coord != 0:
                 self.y_vel = self.y_coord - current_pos
                 self.y_acc = self.y_vel - prev_vel_y
+
+        self.object_vel = [self.x_vel, self.y_vel]
+        self.object_acc = [self.x_acc, self.y_acc]
         return current_pos
 
     def find_object(self, feed_g, feed_color, cascade):
@@ -110,17 +128,19 @@ class Camera:
 
             self.x_coord = self.calculate_coord(x, x + w, "x")
             self.y_coord = self.calculate_coord(y, y + h, "y")
+
+            self.object_coord = [self.x_coord, self.y_coord]
+
         pass
 
-    def get_new(old):
-        new = np.ones(old.shape, np.uint8)
-        cv2.bitwise_not(new, new)
-        return new
+    def find_boxes(self, gray, img):
+        """
+            find_boxes - algorithm to detect and display the coordinates for objects that are like pieces of paper on
+            a desk or table. Note: works specifically for these types of applications. Passes the information to the
+            global variable, center_poly. can be collected from the object inference.
+        """
 
-    def detect_corners(self, img_gray, img):
-
-        maxAreaFound = 0
-
+        # find canny image of objects in frame.
         img_g = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img_g = cv2.bilateralFilter(img_g, 9, 75, 75)
         img_g = cv2.adaptiveThreshold(img_g, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 4)
@@ -128,6 +148,7 @@ class Camera:
         img_g = cv2.copyMakeBorder(img, 5, 5, 5, 5, cv2.BORDER_CONSTANT, value=[0, 0, 0])
         edges = cv2.Canny(img_g, 200, 250)
 
+        # find contours
         im2, contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contours = filter(lambda cont: cv2.arcLength(cont, False) > 100, contours)
         contours = filter(lambda cont: cv2.contourArea(cont) > 10000, contours)
@@ -138,24 +159,26 @@ class Camera:
             rect = cv2.approxPolyDP(cont, 40, True).copy().reshape(-1, 2)
             rects.append(rect)
 
-        # that's basically it
+            # find center
+            center = np.around((rect[1] / 2) + (rect[3] / 2))
+            center = center.astype(int)
+            self.center_poly = center
+            # cv2.circle(img, tuple(center), 5, (0, 255, 0), -1)
+
+        # draws contours to create box on image, center uses this information to calculate the object center.
         cv2.drawContours(img, rects, -1, (0, 255, 0), 1)
 
-
-        cv2.imshow('canny', edges)
-        cv2.imshow('canny', img)
-
-
+        # for debug.
+        # print(self.center_poly)
 
         pass
 
 
-
-
+# load haarcascades for front of face and side of face objects.
 front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
 profile_face_objects = cv2.data.haarcascades + 'haarcascade_profileface.xml'
 
+print(sys.argv)
 camera = Camera(front_face_objects, profile_face_objects, 0)
 camera_ready = camera.camera_ready()
 camera.detect_object()
-
