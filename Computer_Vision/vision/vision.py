@@ -86,6 +86,7 @@ class Camera:
                 self.find_object(gray_feed, feed_by_frame, front_face_cascade)
             elif cascade == 'profile_face':
                 self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
+                self.find_object(flip_feed_g, flip_feed, profile_face_cascade)
             elif cascade == 'paper':
                 self.find_boxes(gray_feed, feed_by_frame)
 
@@ -182,7 +183,6 @@ class Camera:
 # load haarcascades for front of face and side of face objects.
 front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
 profile_face_objects = cv2.data.haarcascades + 'haarcascade_profileface.xml'
-
 camera = Camera(front_face_objects, profile_face_objects, 0)
 camera_ready = camera.camera_ready()
 camera.detect_object(sys.argv[1])
