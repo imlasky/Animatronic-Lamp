@@ -67,10 +67,12 @@ class Camera:
         """
         detect object - method detects an object given the specified object perameters given by the haar cascade and sends
         x and y coordinates to the class attributes. method is complete when feed is killed.
-        :param cascade: haarCascade xml file
+        :param cascade: cascade to be used, object to be detected.
         :param self:
         :return:
         """
+
+        # load cascades locally
         front_face_cascade = cv2.CascadeClassifier(self.front_face_objects)
         profile_face_cascade = cv2.CascadeClassifier(self.profile_face_objects)
 
@@ -89,15 +91,16 @@ class Camera:
             elif cascade == 'paper':
                 self.find_boxes(gray_feed, feed_by_frame)
 
-            # qprint("position:", self.object_coord)
+            # print debug
+            # print("position:", self.object_coord)
             # print("velocity:", self.object_vel)
             # print("acceleration:", self.object_acc)
 
             # for debug, remove later
-            cv2.imshow('Frame', feed_by_frame)
-            cv2.imshow('Frame2', gray_feed)
+            # cv2.imshow('Frame', feed_by_frame)
+            # cv2.imshow('Frame2', gray_feed)
 
-            # Press Q on keyboard to  exit
+            # Press Q on keyboard to exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
                 break
 
