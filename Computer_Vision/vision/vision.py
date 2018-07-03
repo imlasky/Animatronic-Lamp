@@ -16,7 +16,6 @@ class Camera:
     # global vars.
     x_coord = 0
     y_coord = 0
-    fps = 0
     x_vel = 0
     y_vel = 0
     x_acc = 0
@@ -24,9 +23,7 @@ class Camera:
 
     center_poly = 0
 
-    human_head_mm = 560
-
-    def __init__(self, object_cascade, object2_cascade, camera_port):
+    def __init__(self, camera_port):
         """
         vision class init constructor.
 
@@ -43,10 +40,11 @@ class Camera:
         self.object_vel = []
         self.object_acc = []
 
+        self.front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        self.profile_face_objects = cv2.data.haarcascades + 'haarcascade_profileface.xml'
+
         self.camera_port = camera_port
         self.feed = cv2.VideoCapture(self.camera_port)
-        self.object_cascade = object_cascade
-        self.object2_cascade = object2_cascade
 
     def camera_ready(self):
         """
@@ -69,11 +67,12 @@ class Camera:
         """
         detect object - method detects an object given the specified object perameters given by the haar cascade and sends
         x and y coordinates to the class attributes. method is complete when feed is killed.
+        :param cascade: haarCascade xml file
         :param self:
         :return:
         """
-        front_face_cascade = cv2.CascadeClassifier(self.object_cascade)
-        profile_face_cascade = cv2.CascadeClassifier(self.object2_cascade)
+        front_face_cascade = cv2.CascadeClassifier(self.front_face_objects)
+        profile_face_cascade = cv2.CascadeClassifier(self.profile_face_objects)
 
         # camera loop
         while self.feed:
@@ -181,8 +180,8 @@ class Camera:
 
 
 # load haarcascades for front of face and side of face objects.
-front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-profile_face_objects = cv2.data.haarcascades + 'haarcascade_profileface.xml'
-camera = Camera(front_face_objects, profile_face_objects, 0)
-camera_ready = camera.camera_ready()
-camera.detect_object(sys.argv[1])
+# front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+# profile_face_objects = cv2.data.haarcascades + 'haarcascade_profileface.xml'
+# camera = Camera(front_face_objects, profile_face_objects, 0)
+# camera_ready = camera.camera_ready()
+# camera.detect_object(sys.argv[1])
