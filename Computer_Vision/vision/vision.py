@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 import sys
+import threading
+import time
 
 
-class Camera:
+class Camera(threading.Thread):
     """
         Camera Class - class that takes control of the camera and its functionality. The objective of this class is to
     run the camera, identify objects of interest and specify the location based on the camera's position. The class will
@@ -36,6 +38,7 @@ class Camera:
         :param camera_port: camera object
         :return:
         """
+        super().__init__()
         self.object_coord = []
         self.object_vel = []
         self.object_acc = []
@@ -45,6 +48,9 @@ class Camera:
 
         self.camera_port = camera_port
         self.feed = cv2.VideoCapture(self.camera_port)
+
+    def run(self):
+        self.run_camera()
 
     def camera_ready(self):
         """
@@ -62,6 +68,19 @@ class Camera:
 
         # Closes all the frames
         cv2.destroyAllWindows()
+
+    def run_camera(self):
+        while (True):
+            # Capture frame-by-frame
+            ret, frame = self.feed.read()
+
+            # Our operations on the frame come here
+            # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Display the resulting frame
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
     def detect_object(self, cascade):
         """
@@ -97,8 +116,9 @@ class Camera:
             # print("acceleration:", self.object_acc)
 
             # for debug, remove later
-            # cv2.imshow('Frame', feed_by_frame)
-            # cv2.imshow('Frame2', gray_feed)
+            cv2.imshow('Frame', feed_by_frame)
+            cv2.imshow('Frame2', gray_feed)
+            time.sleep(0.1)
 
             # Press Q on keyboard to exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -181,6 +201,8 @@ class Camera:
 
         pass
 
+    def get_object_coord(self):
+        return self.object_coord
 
 # load haarcascades for front of face and side of face objects.
 # front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
