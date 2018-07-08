@@ -97,16 +97,18 @@ class Camera(threading.Thread):
 
         # camera loop
         while self.feed:
+
+            # init camera from object camera instance
             ret, feed_by_frame = self.feed.read()
             gray_feed = cv2.cvtColor(feed_by_frame, cv2.COLOR_BGR2GRAY)
-            flip_feed = cv2.flip(feed_by_frame, 0)
             flip_feed_g = cv2.flip(gray_feed, 0)
 
+            # detect which object to detect
             if cascade == 'front_face':
                 self.find_object(gray_feed, feed_by_frame, front_face_cascade)
             elif cascade == 'profile_face':
                 self.find_object(gray_feed, feed_by_frame, profile_face_cascade)
-                self.find_object(flip_feed_g, flip_feed, profile_face_cascade)
+                self.find_object(flip_feed_g, feed_by_frame, profile_face_cascade)
             elif cascade == 'paper':
                 self.find_boxes(gray_feed, feed_by_frame)
 
@@ -118,7 +120,10 @@ class Camera(threading.Thread):
             # for debug, remove later
             cv2.imshow('Frame', feed_by_frame)
             cv2.imshow('Frame2', gray_feed)
+<<<<<<< HEAD
             time.sleep(0.1)
+=======
+>>>>>>> 269c00d59a14b89d6774c9a87e3c5d1445d2097f
 
             # Press Q on keyboard to exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
