@@ -1,40 +1,46 @@
 # thread sample
-import threading
-import time
-from autoLuxo_threads import sampleClass
 from Computer_Vision.vision import vision
+from multiprocessing import Process
+import os
+import time
 
-exitFlag = 0
+
+def info(title):
+    print(title)
+    print('module name:', __name__)
+    print('parent process:', os.getppid())
+    print('process id:', os.getpid())
 
 
-# class ThreadSample(threading.Thread):
-#
-#     def __init__(self, threadID, name, counter):
-#         threading.Thread.__init__(self)
-#         self.threadID = threadID
-#         self.name = name
-#         self.counter = counter
-#
-#     def run(self):
-#         print("Starting" + self.name)
-#         self.print_time(self.name, 5, self.counter)
-#         print("Exiting " + self.name)
-#
-#     def print_time(self, name, counter, delay):
-#         while counter:
-#             if exitFlag:
-#                 name.exit()
-#             time.sleep(delay)
-#             print("%s: %s" % (name, time.ctime(time.time())))
-#             counter -= 1
+def f(name):
+    info('function f')
+    print('hello', name)
 
-def print_object_coord():
-    print(cam.get_object_coord())
+
+def run_camera(camera_port):
+    camera = vision.Camera(camera_port)
+    camera.run_camera()
+
+
+def collect_user_data(name):
+    for x in range(10):
+        info('function collect_user_data')
+        time.sleep(1)
+        print("Hello", name)
 
 
 if __name__ == '__main__':
 
-    cam = vision.Camera(0)
-    cam.start()
+    info("Console")
+    p = Process(target=run_camera, args=(0,))
+    q = Process(target=collect_user_data, args=('ian',))
+    q.start()
+    p.start()
+    p.join()
+    q.join()
 
-    print("exit")
+
+
+
+
+

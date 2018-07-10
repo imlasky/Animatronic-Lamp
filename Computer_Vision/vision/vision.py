@@ -120,10 +120,6 @@ class Camera(threading.Thread):
             # for debug, remove later
             cv2.imshow('Frame', feed_by_frame)
             cv2.imshow('Frame2', gray_feed)
-<<<<<<< HEAD
-            time.sleep(0.1)
-=======
->>>>>>> 269c00d59a14b89d6774c9a87e3c5d1445d2097f
 
             # Press Q on keyboard to exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
