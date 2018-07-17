@@ -1,6 +1,6 @@
 # thread sample
 from Computer_Vision.vision import vision
-from multiprocessing import Process
+from multiprocessing import Process, Value, Array
 import os
 import time
 
@@ -12,32 +12,23 @@ def info(title):
     print('process id:', os.getpid())
 
 
-def f(name):
-    info('function f')
-    print('hello', name)
-
-
-def run_camera(camera_port):
-    camera = vision.Camera(camera_port)
-    camera.run_camera()
-
-
-def collect_user_data(name):
-    for x in range(10):
-        info('function collect_user_data')
-        time.sleep(1)
-        print("Hello", name)
+def f(n, a):
+    info('f')
+    n.value = 3.1415927
+    for i in range(len(a)):
+        a[i] = -a[i]
 
 
 if __name__ == '__main__':
+    camera = vision.Camera(0)
+    num = Value('d', 0.0)
+    arr = Array('i', range(2))
 
-    info("Console")
-    p = Process(target=run_camera, args=(0,))
-    q = Process(target=collect_user_data, args=('ian',))
-    q.start()
+    p = Process(target=camera.detect_object('front_face'))
     p.start()
+    print(camera.get_object_coord())    
     p.join()
-    q.join()
+
 
 
 

@@ -3,6 +3,8 @@ import numpy as np
 import sys
 import threading
 import time
+from multiprocessing import Queue
+import os
 
 
 class Camera(threading.Thread):
@@ -39,6 +41,7 @@ class Camera(threading.Thread):
         :return:
         """
         super().__init__()
+
         self.object_coord = []
         self.object_vel = []
         self.object_acc = []
@@ -48,6 +51,9 @@ class Camera(threading.Thread):
 
         self.camera_port = camera_port
         self.feed = cv2.VideoCapture(self.camera_port)
+
+    def queue_res(self):
+        self.q.put(self.object_coord)
 
     def run(self):
         self.run_camera()
@@ -70,13 +76,15 @@ class Camera(threading.Thread):
         cv2.destroyAllWindows()
 
     def run_camera(self):
-        while (True):
+
+        while True:
             # Capture frame-by-frame
             ret, frame = self.feed.read()
 
+
             # Our operations on the frame come here
             # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+            # q.put(["hello", ])
             # Display the resulting frame
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -113,13 +121,14 @@ class Camera(threading.Thread):
                 self.find_boxes(gray_feed, feed_by_frame)
 
             # print debug
-            # print("position:", self.object_coord)
+            print("position:", self.object_coord)
             # print("velocity:", self.object_vel)
             # print("acceleration:", self.object_acc)
 
             # for debug, remove later
             cv2.imshow('Frame', feed_by_frame)
-            cv2.imshow('Frame2', gray_feed)
+            # cv2.imshow('Frame2', gray_feed)
+            # print(self.get_object_coord())
 
             # Press Q on keyboard to exit
             if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -203,7 +212,17 @@ class Camera(threading.Thread):
         pass
 
     def get_object_coord(self):
+        print('module name:', __name__)
+        print('parent process:', os.getppid())
+        print('process id:', os.getpid())
         return self.object_coord
+
+    def f(self, n, a):
+        n.value = 3.1415927
+        for i in range(len(a)):
+            a[i] = -a[i]
+            print('hello')
+            time.sleep(1)
 
 # load haarcascades for front of face and side of face objects.
 # front_face_objects = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
