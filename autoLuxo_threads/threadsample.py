@@ -20,14 +20,15 @@ def f(n, a):
 
 
 if __name__ == '__main__':
-    camera = vision.Camera(0)
-    num = Value('d', 0.0)
-    arr = Array('i', range(2))
+    """Main method"""
+    camera = vision.Camera(0)           # starts camera class
+    num = Value('d', 0.0)               # this was something i was trying from the tutorial
+    arr = Array('i', range(2))          # this too
 
-    p = Process(target=camera.detect_object('front_face'))
-    p.start()
-    print(camera.get_object_coord())    
-    p.join()
+    p = Process(target=camera.detect_object('front_face'))  # classify process as detect object
+    p.start()                                               # start process
+    print(camera.get_object_coord())                        # print coords from main process
+    p.join()                                                # merge process
 
 
 
