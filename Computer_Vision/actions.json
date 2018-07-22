@@ -1,0 +1,45 @@
+{
+    "manifest": {
+        "displayName": "Look at Me",
+        "invocationName": "Look at Me",
+        "category": "PRODUCTIVITY"
+    },
+    "actions": [
+        {
+            "name": "luxo.command.LookAtMe",
+            "availability": {
+                "deviceClasses": [
+                    {
+                        "assistantSdkDevice": {}
+                    }
+                ]
+            },
+            "intent": {
+                "name": "luxo.command.LookAtMe",
+                "trigger": {
+                    "queryPatterns": [
+                        "look at me"
+                    ]
+                }
+            },
+            "fulfillment": {
+                "staticFulfillment": {
+                    "templatedResponse": {
+                        "items": [
+                            {
+                                "simpleResponse": {
+                                    "textToSpeech": "Looking at you"
+                                }
+                            },
+                            {
+                                "deviceExecution": {
+                                    "command": "luxo.command.LookAtMe"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}
