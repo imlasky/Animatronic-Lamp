@@ -31,6 +31,8 @@ import numpy as np
 import gc
 import subprocess
 import sys
+import servos
+import cv2
 
 import Adafruit_PCA9685
 
@@ -59,22 +61,13 @@ WARNING_NOT_REGISTERED = """
     https://developers.google.com/assistant/sdk/guides/library/python/embed/register-device
 """
 
-pwm = Adafruit_PCA9685.PCA9685()
+
+def run_new_process(arg):
+    call(['python vision.py' + ' ' + str(arg)], shell=True)
+
+
 threads = []
-def load_graph(frozen_graph_filename):
-    # We load the protobuf file from the disk and parse it to retrieve the
-    # unserialized graph_def
-    with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
-        graph_def = tf.GraphDef() 
-        graph_def.ParseFromString(f.read())
-
-    with tf.Graph().as_default() as graph:
-	# The name var will prefix every op/nodes in your graph
-	# Since we load everything in a new graph, this is not needed
-        tf.import_graph_def(graph_def)
-
-    return graph
-
+feed = cv2.VideoCapture(0)
 
 def process_event(event):
     """Pretty prints events.
@@ -97,64 +90,11 @@ def process_event(event):
         for command, params in event.actions:
             print('Do command', command, 'with params', str(params))
             if command == 'action.devices.commands.OnOff':
-                if params['on']:
-                    pwm.set_pwm(0, 0, 300)
-                    print('Turning on.')
-                else:
-                    pwm.set_pwm(0, 0, 150)
-                    print('Turning off.')
+                threads[1].join()
             if command == 'luxo.command.LookAtMe':
-                graph = load_graph('./Imitation_test.pb')
-
-		# Set default variables to load
-                x = graph.get_tensor_by_name('import/vector_observation:0')
-                y = graph.get_tensor_by_name('import/action:0')
-
-		# Set initial positions
-                initial_servo_pos = [0, 0, 0, 0]
-                first_flag = 1
-
-                pwm.set_pwm_freq(60)
-                servo_set = [225, 225, 113, 225]
-                pwm.set_pwm(0, 0, 375)
-                pwm.set_pwm(1, 0, 375)
-                pwm.set_pwm(2, 0, 263)
-                pwm.set_pwm(3, 0, 375)
-
-		# We launch a Session
-                with tf.Session(graph=graph) as sess:
-		#    # Note: we don't nee to initialize/restore anything
-		#    # There is no Variables in this graph, only hardcoded constants
-                    # Figure out way to exit loop. Google Assistant Interrupt
-                    if camera.object_coord == []:
-                        continue
-                    if first_flag:
-                        test_features = initial_servo_pos + camera.object_coord
-                        first_flag = 0
-                    else:
-                        test_features = out_servo_pos[0] + camera.object_coord
-
-                    # Get output servo positions from graph
-                    out_servo_pos = sess.run(y,feed_dict={x: [test_features]}).tolist()
-
-                    # Set extremes to 1 and -1, just in case
-                    temp_pos = np.array(out_servo_pos)
-                    temp_pos[temp_pos > 1] = 1
-                    temp_pos[temp_pos < -1] = -1
-
-                    # Translate fractions to servo PWM outputs
-                    weights = np.multiply(np.array(servo_set), np.array(temp_pos))
-                    weights += np.array([375, 375, 263, 375]) 
-                    weights = weights.astype(int) 
-
-                    print(weights)
-
-
-                    # Set servos
-                    pwm.set_pwm(0, 0, weights[0][0])
-                    pwm.set_pwm(1, 0, weights[0][1])
-                    pwm.set_pwm(2, 0, weights[0][2])
-                    pwm.set_pwm(3, 0, weights[0][3])
+                t = vision.Camera(feed, 0)
+                threads.append(t)
+                t.start()
 
 
 def main():
@@ -177,7 +117,7 @@ def main():
     parser.add_argument('--credentials', type=existing_file,
                         metavar='OAUTH2_CREDENTIALS_FILE',
                         default=os.path.join(
-                            os.path.expanduser('~/.config'),
+                            os.path.expanduser('/home/pi/.config'),
                             'google-oauthlib-tool',
                             'credentials.json'
                         ),
@@ -209,11 +149,26 @@ def main():
         args.device_model_id and args.device_model_id != device_model_id)
 
     device_model_id = args.device_model_id or device_model_id
-    
-    pwm.set_pwm(0, 0, 375)
-    pwm.set_pwm(1, 0, 375)
-    pwm.set_pwm(2, 0, 263)
-    pwm.set_pwm(3, 0, 375)
+
+    servo0 = servos.Servo(250, 600, 0)
+    servo1 = servos.Servo(120, 538, 1)
+    servo2 = servos.Servo(154, 382, 2)
+    servo3 = servos.Servo(105, 620, 3)
+
+    servo0.set_pos(0)
+    servo1.set_pos(0)
+    servo2.set_pos(0)
+    servo3.set_pos(0)
+
+    servo3.set_pos(0.5)
+    time.sleep(0.1)
+    servo3.set_pos(-0.5)
+    time.sleep(0.1)
+    servo3.set_pos(0.25)
+    time.sleep(0.1)
+    servo3.set_pos(-0.25)
+    time.sleep(0.1)
+    servo3.set_pos(0)
 
 
     with Assistant(credentials, device_model_id) as assistant:
@@ -241,14 +196,11 @@ def main():
         for event in events:
             process_event(event)
 
-def run_new_camera():
-    call(['python vision.py'], shell=True)
 
 
 if __name__ == '__main__':
     gc.collect()
-    t = Thread(target = run_new_camera)
     m = Thread(target = main)
-    t.start()
     m.start()
+    threads.append(m)
 

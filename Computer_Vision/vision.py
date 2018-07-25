@@ -2,9 +2,12 @@ import cv2
 import numpy as np
 import sys
 import time
+import tensorflow as tf
+import hardware as hw
+import threading
 
 
-class Camera():
+class Camera(threading.Thread):
     """
         Camera Class - class that takes control of the camera and its functionality. The objective of this class is to
     run the camera, identify objects of interest and specify the location based on the camera's position. The class will
@@ -20,10 +23,12 @@ class Camera():
     y_vel = 0
     x_acc = 0
     y_acc = 0
+    curr_time_x = 0
+    curr_time_y = 0
 
     center_poly = 0
 
-    def __init__(self, camera_port):
+    def __init__(self, feed, obj):
         """
         vision class init constructor.
         constructs the vision class and allows the functions to be called. feed is meant to represent the camera being used.
@@ -41,8 +46,17 @@ class Camera():
         self.front_face_objects = './haarcascades/haarcascade_frontalface_default.xml'
         self.profile_face_objects = './haarcascades/haarcascade_profileface.xml'
 
-        self.camera_port = camera_port
-        self.feed = cv2.VideoCapture(self.camera_port)
+        #self.camera_port = camera_port
+        #self.feed = cv2.VideoCapture(self.camera_port)
+        self.feed = feed
+        self.obj = obj
+        self.flag = 1
+
+        self.positions = [0, 0, 0, 0]
+        self._stopevent = threading.Event( )
+        threading.Thread.__init__(self)
+
+
 
     def camera_ready(self):
         """
@@ -61,17 +75,22 @@ class Camera():
         # Closes all the frames
         cv2.destroyAllWindows()
 
-    def run_camera(self):
+    def run(self):
 
-        while True:
-            ret, frame = self.feed.read()
-            print(ret)
+        self.detect_object(self.obj, self.feed)
+
+    def join(self, timeout=None):
+
+        print('join statement')
+        self.flag = 0
+        self._stopevent.set( )
+        threading.Thread.join(self, timeout)
 
             #cv2.imshow('frame', frame)
             #if cv2.waitKey(1) & 0xff == ord('q'):
             #    break
 
-    def detect_object(self, cascade):
+    def detect_object(self, cascade, feed):
         """
         detect object - method detects an object given the specified object perameters given by the haar cascade and sends
         x and y coordinates to the class attributes. method is complete when feed is killed.
@@ -80,28 +99,52 @@ class Camera():
         :return:
         """
 
+        # load cascades locally
+        front_face_cascade = cv2.CascadeClassifier(self.front_face_objects)
+        profile_face_cascade = cv2.CascadeClassifier(self.profile_face_objects)
+        cascade = int(cascade)
 
-        while True:
-            time.delay(0.1)
-            # load cascades locally
-            front_face_cascade = cv2.CascadeClassifier(self.front_face_objects)
-            profile_face_cascade = cv2.CascadeClassifier(self.profile_face_objects)
+        avg_pos = np.zeros((10, 4))
+        counter = 0
+        first_flag = 1
+        window_size = 10
 
+        while self.flag:
+
+            ret, feed_by_frame = feed.read()
+            feed_by_frame_small = cv2.resize(feed_by_frame, (0,0), fx=0.2, fy=0.2)
 
             # detect which object to detect
+
             if cascade == 0:
-                feed_by_frame_small = cv2.resize(feed_by_frame, (0,0), fx=0.2, fy=0.2)
                 self.frame_height, self.frame_width = feed_by_frame_small[:,:,0].shape
                 gray_feed = cv2.cvtColor(feed_by_frame_small, cv2.COLOR_BGR2GRAY)
                 flip_feed_g = cv2.flip(gray_feed, 0)
-                self.find_object(gray_feed, feed_by_frame, front_face_cascade)
+                self.find_object(gray_feed, feed_by_frame_small, front_face_cascade)
             elif cascade == 1:
                 feed_by_frame_small = cv2.resize(feed_by_frame, (0,0), fx=0.2, fy=0.2)
                 gray_feed = cv2.cvtColor(feed_by_frame_small, cv2.COLOR_BGR2GRAY)
                 flip_feed_g = cv2.flip(gray_feed, 0)
-                self.find_object(flip_feed_g, feed_by_frame, profile_face_cascade)
+                self.find_object(flip_feed_g, feed_by_frame_small, profile_face_cascade)
             elif cascade == 2:
                 self.find_boxes(gray_feed, feed_by_frame)
+
+
+            temp_pos = hw.set_servos(self.positions.copy(), self.object_coord)
+            avg_pos[counter] = temp_pos 
+            counter += 1
+            if first_flag:
+                if counter == window_size:
+                    first_flag = 0
+            else:
+                self.position = (np.average(avg_pos,0)).tolist()
+                
+            counter %= window_size 
+
+
+                
+                
+            #print(self.positions)
 
                 # print debug
                 # print("position:", self.object_coord)
@@ -110,11 +153,6 @@ class Camera():
 
                 # for debug, remove later
                 #cv2.imshow('Frame', feed_by_frame)
-                #cv2.imshow('Frame2', gray_feed)
-
-                # Press Q on keyboard to exit
-                #if cv2.waitKey(25) & 0xFF == ord('q'):
-                #    break
 
     def kill_camera():
         self.kill_feed()
@@ -129,18 +167,43 @@ class Camera():
         current_pos = (vertex1 + vertex2) / 2
         if direction == "x":
             prev_vel_x = self.x_vel
+            old_time_x = self.curr_time_x
             if self.x_coord != 0:
-                self.x_vel = self.x_coord - current_pos
-                self.x_acc = self.x_vel - prev_vel_x
+                t = time.time()
+                time_dif = t - old_time_x
+                x_diff = current_pos - self.x_coord 
+                self.curr_time_x = t
+                if x_diff < 1:
+                    self.x_vel = 0
+                    self.x_acc = 0
+                else:
+                    self.x_vel = (x_diff)/time_dif
+                    self.x_acc = (self.x_vel - prev_vel_x)/time_dif
+                x_future = current_pos + self.x_vel * time_dif + 0.5 * self.x_acc * time_dif ** 2
+                return x_future
+            else:
+                return current_pos
         elif direction == "y":
             prev_vel_y = self.y_vel
+            old_time_y = self.curr_time_y
             if self.y_coord != 0:
-                self.y_vel = self.y_coord - current_pos
-                self.y_acc = self.y_vel - prev_vel_y
+                t = time.time()
+                time_dif = t - old_time_y
+                y_diff = current_pos - self.y_coord
+                self.curr_time_y = t
+                if y_diff < 1:
+                    self.y_vel = 0
+                    self.y_acc = 0
+                else:
+                    self.y_vel = (y_diff)/time_dif
+                    self.y_acc = (self.y_vel - prev_vel_y)/time_dif
+                y_future = current_pos + self.y_vel * time_dif + 0.5 * self.y_acc * time_dif ** 2
+                return y_future
+            else:
+                return current_pos
 
         self.object_vel = [self.x_vel, self.y_vel]
         self.object_acc = [self.x_acc, self.y_acc]
-        return current_pos
 
     def find_object(self, feed_g, feed_color, cascade):
 
@@ -151,11 +214,13 @@ class Camera():
             self.x_coord = self.calculate_coord(x, x + w, "x")
             self.y_coord = self.calculate_coord(y, y + h, "y")
 
-            normalized_x_coord = (float(self.x_coord)/ (float(self.frame_width)/2.0)) - 1.0
-            normalized_y_coord = ((float(self.y_coord)/ (float(self.frame_height)/2.0)) - 1.0) * (float(self.frame_height)/float(self.frame_width))
+            normalized_x_coord = (self.x_coord/(self.frame_width/2.0)) - 1.0
+            normalized_y_coord = ((self.y_coord/ (self.frame_height/2.0)) - 1.0) * (self.frame_height/self.frame_width)
             self.object_coord = [normalized_x_coord, normalized_y_coord]
 
-        pass
+    def get_coords(self):
+
+        return self.object_coord
 
     def find_boxes(self, gray, img):
         """
@@ -198,7 +263,3 @@ class Camera():
         pass
 
 
-if __name__ == '__main__':
-    camera = Camera(0)
-    camera.camera_ready()
-    camera.run_camera()
